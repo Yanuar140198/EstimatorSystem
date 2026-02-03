@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ahsp_estimator
+      MYSQL_USER: ahsp_user
+      MYSQL_PASSWORD: ahsp_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/migrations:/docker-entrypoint-initdb.d/01_migrations
+      - ./db/seed:/docker-entrypoint-initdb.d/02_seed
+
+  server:
+    build:
+      context: ./server
+    environment:
+      PORT: 4000
+      DB_HOST: mysql
+      DB_USER: ahsp_user
+      DB_PASSWORD: ahsp_pass
+      DB_NAME: ahsp_estimator
+      DB_PORT: 3306
+      JWT_SECRET: supersecret
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mysql
+
+  client:
+    build:
+      context: ./client
+    environment:
+      VITE_API_URL: http://localhost:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+
+volumes:
+  mysql_data:

@@ -1,0 +1,101 @@
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(160) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('Admin','Estimator','Viewer') NOT NULL,
+  created_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(180) NOT NULL,
+  location VARCHAR(180) NOT NULL,
+  oh_pct DECIMAL(6,2) NOT NULL,
+  profit_pct DECIMAL(6,2) NOT NULL,
+  contingency_pct DECIMAL(6,2) NOT NULL,
+  ppn_pct DECIMAL(6,2) NOT NULL,
+  fuel_escalation_pct DECIMAL(6,2) NOT NULL,
+  created_by INT NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS wbs_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  wbs_code VARCHAR(50) NOT NULL,
+  level INT NOT NULL,
+  parent_id INT NULL,
+  name VARCHAR(255) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  quantity DECIMAL(12,2) NOT NULL,
+  remarks VARCHAR(255) NULL,
+  sort_order INT NOT NULL,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES wbs_items(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS ahsp_headers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  wbs_item_id INT NOT NULL,
+  direct_cost DECIMAL(14,2) NOT NULL,
+  unit_rate DECIMAL(14,2) NOT NULL,
+  computed_at DATETIME NOT NULL,
+  FOREIGN KEY (wbs_item_id) REFERENCES wbs_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ahsp_lines (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ahsp_id INT NOT NULL,
+  type ENUM('material','labor','equipment') NOT NULL,
+  ref_code VARCHAR(60) NULL,
+  name VARCHAR(255) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  coefficient DECIMAL(10,4) NOT NULL,
+  unit_price DECIMAL(14,2) NOT NULL,
+  subtotal DECIMAL(14,2) NOT NULL,
+  FOREIGN KEY (ahsp_id) REFERENCES ahsp_headers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS materials_master (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(60) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  price DECIMAL(14,2) NOT NULL,
+  source VARCHAR(255) NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS labor_master (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(60) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  price DECIMAL(14,2) NOT NULL,
+  region VARCHAR(120) NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS equipment_master (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(60) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  price DECIMAL(14,2) NOT NULL,
+  notes VARCHAR(255) NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  entity VARCHAR(80) NOT NULL,
+  entity_id INT NOT NULL,
+  action VARCHAR(80) NOT NULL,
+  before_json JSON NULL,
+  after_json JSON NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
